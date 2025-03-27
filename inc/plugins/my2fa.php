@@ -1,5 +1,9 @@
 <?php
 
+declare(strict_types=1);
+
+use function My2FA\template;
+
 if (!defined('IN_MYBB'))
     exit('Denied.');
 
@@ -37,6 +41,8 @@ require MY2FA_ROOT . 'utils.php';
 require MY2FA_ROOT . 'data.php';
 require MY2FA_ROOT . 'core.php';
 require MY2FA_ROOT . 'rendering.php';
+
+global $plugins;
 
 if (!defined('IN_ADMINCP'))
 {
@@ -285,7 +291,7 @@ function my2fa_deactivate()
     $PL->stylesheet_deactivate('my2fa');
 }
 
-function my2fa_settings_peekers(&$peekers)
+function my2fa_settings_peekers(array &$peekers):array
 {
     $myPeekers = [
         'new Peeker($(".setting_my2fa_enable_device_trusting"), $("
@@ -301,6 +307,8 @@ function my2fa_settings_peekers(&$peekers)
 
     $myPeekers = preg_replace('/(?<!new)\s+/', '', $myPeekers);
     array_push($peekers, ...$myPeekers);
+
+	return $peekers;
 }
 
 // dead function
@@ -308,7 +316,12 @@ function my2fa_settings_change()
 {
     global $mybb;
 
-    $totpBoardNameSetting = &$mybb->input['upsetting']['my2fa_totp_board_name'] ?? null;
+	if(!isset($mybb->input['upsetting']['my2fa_totp_board_name']))
+	{
+		return;
+	}
+
+    $totpBoardNameSetting = &$mybb->input['upsetting']['my2fa_totp_board_name'];
 
     if ($mybb->request_method === 'post' && $totpBoardNameSetting)
         $totpBoardNameSetting = preg_replace('/\s+/', '-', $totpBoardNameSetting);
@@ -332,7 +345,7 @@ function my2fa_global_start()
         #todo: maybe include possible ajax request
         if (!My2FA\hasUserBeenRedirected())
         {
-            My2FA\updateSessionStorage($session->sid, ['redirected' => 1]);
+            My2FA\updateSessionStorage((string)$session->sid, ['redirected' => 1]);
             My2FA\redirectToVerification();
         }
 
@@ -386,12 +399,14 @@ function my2fa_archive_start()
 }
 
 #todo: add password_confirmed_at? also in other inputs with password confirmation
-function my2fa_datahandler_login_complete_end($userHandler)
+function my2fa_datahandler_login_complete_end(\LoginDataHandler &$userHandler): \LoginDataHandler
 {
     global $session;
 
     if (My2FA\isUserVerificationRequired($userHandler->login_data['uid']))
-        My2FA\updateSessionStorage($session->sid, ['redirected' => 0]);
+        My2FA\updateSessionStorage((string)$session->sid, ['redirected' => 0]);
+
+	return $userHandler;
 }
 
 function my2fa_misc_start()
@@ -408,8 +423,11 @@ function my2fa_misc_start()
 
         $verificationContent = My2FA\getVerificationForm($my2faUser, 'misc.php?action=my2fa');
 
-        eval('$miscVerification = "' . My2FA\template('misc_verification') . '";');
-        exit(output_page($miscVerification));
+		$miscVerification =eval(My2FA\template('misc_verification'));
+
+		output_page($miscVerification);
+
+        exit;
     }
 }
 
@@ -419,7 +437,8 @@ function my2fa_usercp_menu_built()
 
     My2FA\loadLanguage();
 
-    eval('$my2faUsercpSetupNav = "' . My2FA\template('usercp_setup_nav') . '";');
+	$my2faUsercpSetupNav =eval(My2FA\template('usercp_setup_nav'));
+
     $usercpnav = str_replace('<!-- my2faUsercpSetupNav -->', $my2faUsercpSetupNav, $usercpnav);
 }
 
@@ -435,33 +454,38 @@ function my2fa_usercp_start()
 
         $forcedGroupNotice = null;
         if (My2FA\isUserForcedToHave2faActivated($mybb->user['uid']))
-            eval('$forcedGroupNotice = "' . My2FA\template('setup_notice_forced_group') . '";');
+			$forcedGroupNotice = eval(template('setup_notice_forced_group'));
 
         $setupContent = My2FA\getSetupForm($mybb->user, 'usercp.php?action=my2fa');
 
-        eval('$usercpSetup = "' . My2FA\template('usercp_setup') . '";');
-        exit(output_page($usercpSetup));
+		$usercpSetup =eval(My2FA\template('usercp_setup'));
+
+		output_page($usercpSetup);
+
+        exit;
     }
 }
 
-function my2fa_build_wol_location(&$wol)
+function my2fa_build_wol_location(array &$hook_arguments): array
 {
     global $lang;
 
-    if (strpos($wol['user_activity']['location'], 'usercp.php?action=my2fa') !== False)
+    if (strpos($hook_arguments['user_activity']['location'], 'usercp.php?action=my2fa') !== False)
     {
         My2FA\loadLanguage();
 
-        $wol['user_activity']['activity'] = 'my2fa_usercp_setup';
-        $wol['location_name'] = $lang->my2fa_usercp_setup_wol;
+		$hook_arguments['user_activity']['activity'] = 'my2fa_usercp_setup';
+		$hook_arguments['location_name'] = $lang->my2fa_usercp_setup_wol;
     }
-    else if (strpos($wol['user_activity']['location'], 'misc.php?action=my2fa') !== False)
+    else if (strpos($hook_arguments['user_activity']['location'], 'misc.php?action=my2fa') !== False)
     {
         My2FA\loadLanguage();
 
-        $wol['user_activity']['activity'] = 'my2fa_misc_verification';
-        $wol['location_name'] = $lang->my2fa_misc_verification_wol;
+		$hook_arguments['user_activity']['activity'] = 'my2fa_misc_verification';
+		$hook_arguments['location_name'] = $lang->my2fa_misc_verification_wol;
     }
+
+	return $hook_arguments;
 }
 
 function my2fa_admin_load()

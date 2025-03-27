@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace My2FA\Methods;
 
 class Email extends AbstractMethod
@@ -71,8 +73,7 @@ class Email extends AbstractMethod
             self::getObfuscatedEmailAddress($user['email'])
         );
 
-        eval('$mailVerification = "' . \My2FA\template('method_email_verification') . '";');
-        return $mailVerification;
+		return eval(\My2FA\template('method_email_verification'));
     }
 
     public static function handleActivation(array $user, string $setupUrl, array $viewParams = []): string
@@ -115,7 +116,7 @@ class Email extends AbstractMethod
                 }
             }
 
-            eval('$mailActivation = "' . \My2FA\template('method_email_activation') . '";');
+			$mailActivation = eval(\My2FA\template('method_email_activation'));
         }
         else
         {
@@ -124,7 +125,7 @@ class Email extends AbstractMethod
                 $user['email']
             );
 
-            eval('$mailActivation = "' . \My2FA\template('method_email_activation_request') . '";');
+			$mailActivation = eval(\My2FA\template('method_email_activation_request'));
         }
 
         return $mailActivation;
@@ -132,12 +133,14 @@ class Email extends AbstractMethod
 
     public static function handleDeactivation(array $user, string $setupUrl, array $viewParams = []): string
     {
-        self::completeDeactivation($user['uid'], $setupUrl);
+         self::completeDeactivation($user['uid'], $setupUrl);
+
+		 return '';
     }
 
     private static function canUserRequestCode(int $userId): bool
     {
-        return \My2FA\countUserLogs($userId, 'email_code_requested', \My2FA\setting('email_rate_limit')) < 1;
+        return \My2FA\countUserLogs($userId, 'email_code_requested', (int)\My2FA\setting('email_rate_limit')) < 1;
     }
 
     private static function isUserCodeValid(int $userId, string $code): bool

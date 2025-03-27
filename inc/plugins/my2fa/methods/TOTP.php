@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace My2FA\Methods;
 
 use PragmaRX\Google2FA\Google2FA;
@@ -59,8 +61,7 @@ class TOTP extends AbstractMethod
             }
         }
 
-        eval('$totpVerification = "' . \My2FA\template('method_totp_verification') . '";');
-        return $totpVerification;
+		return eval(\My2FA\template('method_totp_verification'));
     }
 
     public static function handleActivation(array $user, string $setupUrl, array $viewParams = []): string
@@ -72,13 +73,13 @@ class TOTP extends AbstractMethod
         $google2fa = new Google2FA();
 
         $method = \My2FA\selectMethods()[self::METHOD_ID];
-        $sessionStorage = \My2FA\selectSessionStorage($session->sid);
+        $sessionStorage = \My2FA\selectSessionStorage((string)$session->sid);
 
         if (!isset($sessionStorage['totp_secret_key']))
         {
             $sessionStorage['totp_secret_key'] = $google2fa->generateSecretKey();
 
-            \My2FA\updateSessionStorage($session->sid, [
+            \My2FA\updateSessionStorage((string)$session->sid, [
                 'totp_secret_key' => $sessionStorage['totp_secret_key']
             ]);
         }
@@ -89,7 +90,7 @@ class TOTP extends AbstractMethod
 
             if (self::isUserOtpValid($user['uid'], $mybb->input['otp'], $sessionStorage['totp_secret_key']))
             {
-                \My2FA\deleteFromSessionStorage($session->sid, (array) 'totp_secret_key');
+                \My2FA\deleteFromSessionStorage((string)$session->sid, (array) 'totp_secret_key');
 
                 self::recordSuccessfulAttempt($user['uid'], $mybb->input['otp']);
                 self::completeActivation($user['uid'], $setupUrl, [
@@ -110,13 +111,14 @@ class TOTP extends AbstractMethod
 
         $qrCodeRendered = self::getQrCodeRendered($qrCodeUrl);
 
-        eval('$totpActivation = "' . \My2FA\template('method_totp_activation') . '";');
-        return $totpActivation;
+		return eval(\My2FA\template('method_totp_activation'));
     }
 
     public static function handleDeactivation(array $user, string $setupUrl, array $viewParams = []): string
     {
         self::completeDeactivation($user['uid'], $setupUrl);
+
+		return '';
     }
 
     private static function getQrCodeRendered(string $qrCodeUrl)

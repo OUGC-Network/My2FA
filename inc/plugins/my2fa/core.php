@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace My2FA;
 
 function isUserVerificationRequired(int $userId): bool
@@ -25,7 +27,7 @@ function isSessionTrusted(): bool
     //return strpos($session->sid, 'my2fa=') === 0;
 
     // temp due to how mybb currently handles sessions
-    $sessionStorage = selectSessionStorage($session->sid);
+    $sessionStorage = selectSessionStorage((string)$session->sid);
 
     return
         isset($sessionStorage['verified_by']) &&
@@ -68,7 +70,7 @@ function hasUserBeenRedirected(): bool
 {
     global $session;
 
-    return selectSessionStorage($session->sid)['redirected'] ?? False;
+    return selectSessionStorage((string)$session->sid)['redirected'] ?? False;
 }
 
 function doesUserHave2faEnabled(int $userId): bool
@@ -116,7 +118,7 @@ function setSessionTrusted(): void
     //]);
 
     // temp due to how mybb currently handles sessions
-    updateSessionStorage($session->sid, ['verified_by' => $session->uid]);
+    updateSessionStorage((string)$session->sid, ['verified_by' => $session->uid]);
 }
 
 function setAdminSessionTrusted(): void
@@ -177,7 +179,7 @@ function passwordConfirmationCheck(string $redirectUrl, int $maxAllowedMinutes):
     global $db, $mybb, $session, $lang,
     $headerinclude, $header, $theme, $footer;
 
-    $sessionStorage = selectSessionStorage($session->sid);
+    $sessionStorage = selectSessionStorage((string)$session->sid);
 
     if ($sessionStorage['password_confirmed_at'] + 60*$maxAllowedMinutes <= TIME_NOW)
     {
@@ -192,7 +194,7 @@ function passwordConfirmationCheck(string $redirectUrl, int $maxAllowedMinutes):
 
             if (\validate_password_from_uid($mybb->user['uid'], $mybb->get_input('password')))
             {
-                updateSessionStorage($session->sid, ['password_confirmed_at' => TIME_NOW]);
+                updateSessionStorage((string)$session->sid, ['password_confirmed_at' => TIME_NOW]);
                 redirect($redirectUrl, $lang->my2fa_password_confirmed_success);
             }
             else
@@ -201,7 +203,8 @@ function passwordConfirmationCheck(string $redirectUrl, int $maxAllowedMinutes):
             }
         }
 
-        eval('$passwordConfirmationPage = "' . template('confirm_password') . '";');
+		$passwordConfirmationPage = eval( template('confirm_password'));
+
         \output_page($passwordConfirmationPage);
 
         exit;

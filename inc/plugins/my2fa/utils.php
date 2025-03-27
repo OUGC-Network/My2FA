@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace My2FA;
 
 function setting(string $name): string
@@ -18,7 +20,7 @@ function template(string $name): string
 {
     global $templates;
 
-    return $templates->get('my2fa_' . $name);
+    return $templates->render('my2fa_' . $name);
 }
 
 function loadLanguage(): void

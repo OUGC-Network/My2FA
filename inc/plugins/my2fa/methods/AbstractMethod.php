@@ -1,10 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace My2FA\Methods;
 
 abstract class AbstractMethod
 {
-    public const METHOD_ID = null;
+    public const METHOD_ID = 0;
+
     public const ORDER = 22;
 
     protected static $definitions = [

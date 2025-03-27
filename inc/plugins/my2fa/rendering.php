@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace My2FA;
 
 function getVerificationForm(array $user, string $verificationUrl, bool $includeBreadcrumb = True, bool $includeExtraRows = True): ?string
@@ -40,7 +42,9 @@ function getVerificationForm(array $user, string $verificationUrl, bool $include
             add_breadcrumb($method['definitions']['name']);
         }
 
-        eval('$verificationFormButtons = "' . template('verification_form_buttons') . '";');
+		$verificationFormButtons = eval(template('verification_form_buttons'));
+
+		$verificationFormTrustDeviceOption = '';
 
         $verificationTrustDeviceOption = null;
         if (isDeviceTrustingAllowed())
@@ -60,7 +64,7 @@ function getVerificationForm(array $user, string $verificationUrl, bool $include
                 $checkboxInputState = null;
             }
 
-            eval('$verificationFormTrustDeviceOption = "' . template('verification_form_trust_device_option') . '";');
+			$verificationFormTrustDeviceOption = eval(template('verification_form_trust_device_option'));
         }
 
         $output = $method['className']::handleVerification($user, $verificationUrl, compact(
@@ -81,13 +85,15 @@ function getVerificationForm(array $user, string $verificationUrl, bool $include
         {
             $method = $methods[$userMethod['method_id']];
 
-            eval('$verificationMethodRows .= "' . template('verification_methods_row') . '";');
+			$verificationMethodRows .= eval(template('verification_methods_row'));
         }
 
-        if ($includeExtraRows)
-            eval('$verificationExtraRows .= "' . template('verification_extra_rows') . '";');
+		$verificationExtraRows = '';
 
-        eval('$output = "' . template('verification') . '";');
+        if ($includeExtraRows)
+			$verificationExtraRows .= eval(template('verification_extra_rows'));
+
+		$output = eval(template('verification'));
     }
 
     return $output;
@@ -127,7 +133,7 @@ function getSetupForm(array $user, string $setupUrl, bool $includeBreadcrumb = T
                 $method['className']::canBeDeactivated() &&
                 !isset($userMethods[$mybb->input['method']])
             ) {
-                eval('$setupFormButtons = "' . template('setup_form_buttons') . '";');
+				$setupFormButtons = eval(template('setup_form_buttons'));
 
                 $output = $method['className']::handleActivation($user, $setupUrl, compact(
                     'setupFormButtons'
@@ -154,7 +160,7 @@ function getSetupForm(array $user, string $setupUrl, bool $includeBreadcrumb = T
 
             if (!isset($userMethods[$method['id']]))
             {
-                eval('$setupMethodRows .= "' . template('setup_methods_row') . '";');
+				$setupMethodRows .= eval(template('setup_methods_row'));
             }
             else
             {
@@ -170,12 +176,12 @@ function getSetupForm(array $user, string $setupUrl, bool $includeBreadcrumb = T
                 );
 
                 if ($method['className']::canBeDeactivated())
-                    eval('$setupDeactivateButton = "' . template('setup_button_deactivate') . '";');
+					$setupDeactivateButton = eval(template('setup_button_deactivate'));
 
                 if ($method['className']::canBeManaged())
-                    eval('$setupManageButton = "' . template('setup_button_manage') . '";');
+					$setupManageButton = eval(template('setup_button_manage'));
 
-                eval('$setupMethodRows .= "' . template('setup_methods_row_enabled') . '";');
+				$setupMethodRows .= eval(template('setup_methods_row_enabled'));
             }
         }
 
@@ -220,7 +226,7 @@ function getSetupForm(array $user, string $setupUrl, bool $includeBreadcrumb = T
                     my_date('relative', $userTokens[$mybb->cookies['my2fa_token']]['expire_on'])
                 );
 
-                eval('$currentTrustedDeviceRow = "' . template('setup_trusted_devices_row_current') . '";');
+				$currentTrustedDeviceRow = eval(template('setup_trusted_devices_row_current'));
             }
 
             $otherTrustedDevicesRow = null;
@@ -237,16 +243,16 @@ function getSetupForm(array $user, string $setupUrl, bool $includeBreadcrumb = T
                     $otherUserToken['generated_on_formatted'] = my_date('normal', $otherUserToken['generated_on']);
                     $otherUserToken['expire_on_formatted'] = my_date('normal', $otherUserToken['expire_on']);
 
-                    eval('$otherTrustedDevicesLogRows .= "' . template('setup_trusted_devices_row_others_row_log') . '";');
+					$otherTrustedDevicesLogRows .= eval(template('setup_trusted_devices_row_others_row_log'));
                 }
 
-                eval('$otherTrustedDevicesRow = "' . template('setup_trusted_devices_row_others') . '";');
+				$otherTrustedDevicesRow = eval(template('setup_trusted_devices_row_others'));
             }
 
-            eval('$trustedDevices = "' . template('setup_trusted_devices') . '";');
+			$trustedDevices = eval(template('setup_trusted_devices'));
         }
 
-        eval('$output = "' . template('setup') . '";');
+		$output = eval(template('setup'));
     }
 
     return $output;

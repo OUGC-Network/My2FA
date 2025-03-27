@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace My2FA\Methods;
 
 class Skeleton extends AbstractMethod
@@ -41,8 +43,7 @@ class Skeleton extends AbstractMethod
             }
         }
 
-        eval('$skeletonVerification = "' . \My2FA\template('method_skeleton_verification') . '";');
-        return $skeletonVerification;
+		return eval(\My2FA\template('method_skeleton_verification'));
     }
 
     public static function handleActivation(array $user, string $setupUrl, array $viewParams = []): string
@@ -65,13 +66,14 @@ class Skeleton extends AbstractMethod
             }
         }
 
-        eval('$skeletonActivation = "' . \My2FA\template('method_skeleton_activation') . '";');
-        return $skeletonActivation;
+		return eval(\My2FA\template('method_skeleton_activation'));
     }
 
     public static function handleDeactivation(array $user, string $setupUrl, array $viewParams = []): string
     {
         self::completeDeactivation($user['uid'], $setupUrl);
+
+		return '';
     }
 
     private static function isOtpValid(string $otp): bool
