@@ -4,20 +4,24 @@ declare(strict_types=1);
 
 namespace My2FA;
 
+use function inline_error;
+use function my_setcookie;
+use function output_page;
+use function validate_password_from_uid;
+use function verify_post_check;
+
 function isUserVerificationRequired(int $userId): bool
 {
     return
         doesUserHave2faEnabled($userId) &&
-        !isSessionTrusted() && !isUserDeviceTrusted($userId)
-    ;
+        !isSessionTrusted() && !isUserDeviceTrusted($userId);
 }
 
 function isAdminVerificationRequired(int $userId): bool
 {
     return
         doesUserHave2faEnabled($userId) &&
-        !isAdminSessionTrusted() && !isUserDeviceTrusted($userId)
-    ;
+        !isAdminSessionTrusted() && !isUserDeviceTrusted($userId);
 }
 
 function isSessionTrusted(): bool
@@ -31,8 +35,7 @@ function isSessionTrusted(): bool
 
     return
         isset($sessionStorage['verified_by']) &&
-        $sessionStorage['verified_by'] === $session->uid
-    ;
+        $sessionStorage['verified_by'] === $session->uid;
 }
 
 function isAdminSessionTrusted(): bool
@@ -50,10 +53,10 @@ function isUserDeviceTrusted(int $userId): bool
         !isset($mybb->cookies['my2fa_token']) ||
         !isDeviceTrustingAllowed()
     ) {
-        return False;
+        return false;
     }
 
-    $userToken = selectUserTokens($userId, (array) $mybb->cookies['my2fa_token']);
+    $userToken = selectUserTokens($userId, (array)$mybb->cookies['my2fa_token']);
 
     return !empty($userToken);
 }
@@ -62,15 +65,14 @@ function isDeviceTrustingAllowed(): bool
 {
     return
         setting('enable_device_trusting') &&
-        (!defined('IN_ADMINCP') || !setting('disable_device_trusting_in_acp'))
-    ;
+        (!defined('IN_ADMINCP') || !setting('disable_device_trusting_in_acp'));
 }
 
 function hasUserBeenRedirected(): bool
 {
     global $session;
 
-    return selectSessionStorage((string)$session->sid)['redirected'] ?? False;
+    return selectSessionStorage((string)$session->sid)['redirected'] ?? false;
 }
 
 function doesUserHave2faEnabled(int $userId): bool
@@ -87,8 +89,7 @@ function isRedirectUrlValid(string $redirectUrl): bool
 
     return
         $redirectUrlHost === $boardUrlHost &&
-        strpos(parse_url($redirectUrl, PHP_URL_QUERY), 'ajax=') === False
-    ;
+        strpos(parse_url($redirectUrl, PHP_URL_QUERY), 'ajax=') === false;
 }
 
 function isUserForcedToHave2faActivated(int $userId): bool
@@ -105,8 +106,7 @@ function isUserForcedToHave2faActivated(int $userId): bool
             )
         ) &&
         !doesUserHave2faEnabled($userId) &&
-        is_member(setting('forced_groups'), $userId)
-    ;
+        is_member(setting('forced_groups'), $userId);
 }
 
 function setSessionTrusted(): void
@@ -134,14 +134,14 @@ function setDeviceTrusted(int $userId): void
 {
     global $mybb;
 
-    $expirationTime = setting('device_trusting_duration_in_days') * 60*60*24 + TIME_NOW;
+    $expirationTime = setting('device_trusting_duration_in_days') * 60 * 60 * 24 + TIME_NOW;
 
     $userTokenResult = insertUserToken([
         'uid' => $userId,
         'expire_on' => $expirationTime,
     ]);
 
-    \my_setcookie('my2fa_token', $userTokenResult['tid'], $expirationTime, True);
+    my_setcookie('my2fa_token', $userTokenResult['tid'], $expirationTime, true);
 }
 
 function redirectToVerification(): void
@@ -152,8 +152,9 @@ function redirectToVerification(): void
         defined('THIS_SCRIPT') &&
         THIS_SCRIPT === 'misc.php' &&
         $mybb->get_input('action') === 'my2fa'
-    )
+    ) {
         return;
+    }
 
     $redirectUrlQueryStr = redirectUrlAsQueryString(getCurrentUrl());
 
@@ -168,8 +169,9 @@ function redirectToSetup(): void
         defined('THIS_SCRIPT') &&
         THIS_SCRIPT === 'usercp.php' &&
         $mybb->get_input('action') === 'my2fa'
-    )
+    ) {
         return;
+    }
 
     redirect("{$mybb->settings['bburl']}/usercp.php?action=my2fa");
 }
@@ -177,35 +179,30 @@ function redirectToSetup(): void
 function passwordConfirmationCheck(string $redirectUrl, int $maxAllowedMinutes): void
 {
     global $db, $mybb, $session, $lang,
-    $headerinclude, $header, $theme, $footer;
+           $headerinclude, $header, $theme, $footer;
 
     $sessionStorage = selectSessionStorage((string)$session->sid);
 
-    if ($sessionStorage['password_confirmed_at'] + 60*$maxAllowedMinutes <= TIME_NOW)
-    {
+    if ($sessionStorage['password_confirmed_at'] + 60 * $maxAllowedMinutes <= TIME_NOW) {
         loadLanguage();
         $errors = null;
 
-        if ($mybb->get_input('my2fa_confirm_password'))
-        {
-            \verify_post_check($mybb->get_input('my_post_key'));
+        if ($mybb->get_input('my2fa_confirm_password')) {
+            verify_post_check($mybb->get_input('my_post_key'));
 
             require_once MYBB_ROOT . 'inc/functions_user.php';
 
-            if (\validate_password_from_uid($mybb->user['uid'], $mybb->get_input('password')))
-            {
+            if (validate_password_from_uid($mybb->user['uid'], $mybb->get_input('password'))) {
                 updateSessionStorage((string)$session->sid, ['password_confirmed_at' => TIME_NOW]);
                 redirect($redirectUrl, $lang->my2fa_password_confirmed_success);
-            }
-            else
-            {
-                $errors = \inline_error($lang->error_invalidpassword);
+            } else {
+                $errors = inline_error($lang->error_invalidpassword);
             }
         }
 
-		$passwordConfirmationPage = eval( template('confirm_password'));
+        $passwordConfirmationPage = eval(template('confirm_password'));
 
-        \output_page($passwordConfirmationPage);
+        output_page($passwordConfirmationPage);
 
         exit;
     }
@@ -215,6 +212,5 @@ function redirectUrlAsQueryString(?string $redirectUrl): ?string
 {
     return $redirectUrl
         ? '&redirect_url=' . urlencode($redirectUrl)
-        : null
-    ;
+        : null;
 }

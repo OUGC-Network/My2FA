@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 use function My2FA\template;
 
-if (!defined('IN_MYBB'))
+if (!defined('IN_MYBB')) {
     exit('Denied.');
+}
 
-if (!defined('PLUGINLIBRARY'))
+if (!defined('PLUGINLIBRARY')) {
     define('PLUGINLIBRARY', MYBB_ROOT . 'inc/plugins/pluginlibrary.php');
+}
 
 define('MY2FA_ROOT', MYBB_ROOT . 'inc/plugins/my2fa/');
 
@@ -18,17 +20,14 @@ array_walk($my2faComposerAutoload, function (&$path) {
 });
 
 $GLOBALS['my2faAutoload'] = [
-    'My2FA\\Methods\\' => 'methods',
-] + $my2faComposerAutoload;
+        'My2FA\\Methods\\' => 'methods',
+    ] + $my2faComposerAutoload;
 
-spl_autoload_register(function ($className)
-{
+spl_autoload_register(function ($className) {
     global $my2faAutoload;
 
-    foreach ($my2faAutoload as $namespace => $path)
-    {
-        if (strpos($className, $namespace) === 0)
-        {
+    foreach ($my2faAutoload as $namespace => $path) {
+        if (strpos($className, $namespace) === 0) {
             $classNameUnprefixed = strtr($className, [$namespace => '', '\\' => '/']);
             require MY2FA_ROOT . $path . '/' . $classNameUnprefixed . '.php';
 
@@ -44,8 +43,7 @@ require MY2FA_ROOT . 'rendering.php';
 
 global $plugins;
 
-if (!defined('IN_ADMINCP'))
-{
+if (!defined('IN_ADMINCP')) {
     $plugins->add_hook('global_start', 'my2fa_global_start', -22);
     $plugins->add_hook('xmlhttp', 'my2fa_xmlhttp', -22);
     $plugins->add_hook('archive_start', 'my2fa_archive_start', -22);
@@ -56,9 +54,7 @@ if (!defined('IN_ADMINCP'))
     $plugins->add_hook('usercp_start', 'my2fa_usercp_start');
 
     $plugins->add_hook('build_friendly_wol_location_end', 'my2fa_build_wol_location');
-}
-else
-{
+} else {
     $plugins->add_hook('admin_load', 'my2fa_admin_load');
 
     $plugins->add_hook('admin_settings_print_peekers', 'my2fa_settings_peekers');
@@ -74,12 +70,12 @@ $plugins->add_hook('task_dailycleanup_end', 'my2fa_task_dailycleanup');
 function my2fa_info()
 {
     return [
-        'name'          => 'My2FA',
-        'description'   => 'Two-factor authentication for added account security.',
-        'website'       => 'https://github.com/demtor/mybb-2fa',
-        'author'        => 'demtor',
-        'authorsite'    => 'https://github.com/demtor',
-        'version'       => '1.0-alpha',
+        'name' => 'My2FA',
+        'description' => 'Two-factor authentication for added account security.',
+        'website' => 'https://github.com/demtor/mybb-2fa',
+        'author' => 'demtor',
+        'authorsite' => 'https://github.com/demtor',
+        'version' => '1.0-alpha',
         'compatibility' => '18*'
     ];
 }
@@ -88,20 +84,22 @@ function my2fa_install()
 {
     global $db;
 
-    if (!file_exists(PLUGINLIBRARY))
-    {
+    if (!file_exists(PLUGINLIBRARY)) {
         flash_message('PluginLibrary missing.', 'error');
         admin_redirect('index.php?module=config-plugins');
     }
 
-    if (!$db->field_exists('has_my2fa', 'users'))
-        $db->add_column('users', 'has_my2fa', "tinyint(1) NOT NULL DEFAULT 0");
+    if (!$db->field_exists('has_my2fa', 'users')) {
+        $db->add_column('users', 'has_my2fa', 'tinyint(1) NOT NULL DEFAULT 0');
+    }
 
-    if (!$db->field_exists('my2fa_storage', 'sessions'))
-        $db->add_column('sessions', 'my2fa_storage', "TEXT");
+    if (!$db->field_exists('my2fa_storage', 'sessions')) {
+        $db->add_column('sessions', 'my2fa_storage', 'TEXT');
+    }
 
-    $db->write_query("
-        CREATE TABLE IF NOT EXISTS `".TABLE_PREFIX."my2fa_user_methods` (
+    $db->write_query(
+        '
+        CREATE TABLE IF NOT EXISTS `' . TABLE_PREFIX . "my2fa_user_methods` (
             `uid` int unsigned NOT NULL,
             `method_id` tinyint NOT NULL,
             `data` varchar(255) NOT NULL DEFAULT '',
@@ -110,19 +108,21 @@ function my2fa_install()
         ) ENGINE=InnoDB" . $db->build_create_table_collation()
     );
 
-    $db->write_query("
-        CREATE TABLE IF NOT EXISTS `".TABLE_PREFIX."my2fa_tokens` (
+    $db->write_query(
+        '
+        CREATE TABLE IF NOT EXISTS `' . TABLE_PREFIX . 'my2fa_tokens` (
             `tid` varchar(32) NOT NULL,
             `uid` int unsigned NOT NULL,
             `generated_on` int unsigned NOT NULL DEFAULT 0,
             `expire_on` int unsigned NOT NULL DEFAULT 0,
             PRIMARY KEY (`tid`),
             KEY `IX_uid` (`uid`)
-        ) ENGINE=InnoDB" . $db->build_create_table_collation()
+        ) ENGINE=InnoDB' . $db->build_create_table_collation()
     );
 
-    $db->write_query("
-        CREATE TABLE IF NOT EXISTS `".TABLE_PREFIX."my2fa_logs` (
+    $db->write_query(
+        '
+        CREATE TABLE IF NOT EXISTS `' . TABLE_PREFIX . "my2fa_logs` (
             `id` int unsigned NOT NULL AUTO_INCREMENT,
             `uid` int unsigned NOT NULL,
             `event` varchar(40) NOT NULL,
@@ -145,16 +145,19 @@ function my2fa_uninstall()
 
     require_once MYBB_ROOT . '/inc/adminfunctions_templates.php';
 
-    find_replace_templatesets('usercp_nav_profile',
+    find_replace_templatesets(
+        'usercp_nav_profile',
         '#' . preg_quote('<!-- my2faUsercpSetupNav -->') . '#i',
         ''
     );
 
-    if ($db->field_exists('has_my2fa', 'users'))
+    if ($db->field_exists('has_my2fa', 'users')) {
         $db->drop_column('users', 'has_my2fa');
+    }
 
-    if ($db->field_exists('my2fa_storage', 'sessions'))
+    if ($db->field_exists('my2fa_storage', 'sessions')) {
         $db->drop_column('sessions', 'my2fa_storage');
+    }
 
     $db->drop_table('my2fa_user_methods');
     $db->drop_table('my2fa_tokens');
@@ -180,79 +183,81 @@ function my2fa_activate()
     $PL or require_once PLUGINLIBRARY;
 
     #todo: remember to insert everything in a lang file using PL makelang parameter
-    $PL->settings('my2fa',
+    $PL->settings(
+        'my2fa',
         'My2FA',
         'Manage settings for the two-factor authentication of users.',
         [
             'enable_device_trusting' => [
-                'title'       => 'Enable Device Trusting',
+                'title' => 'Enable Device Trusting',
                 'description' => 'Allow users to trust their device (browser) during verificaton through a checkbox.',
                 'optionscode' => 'yesno',
-                'value'       => 1
+                'value' => 1
             ],
             'device_trusting_duration_in_days' => [
-                'title'       => 'Device Trusting Duration (days)',
+                'title' => 'Device Trusting Duration (days)',
                 'description' => 'For how many days can the device be remembered?',
                 'optionscode' => 'numeric',
-                'value'       => 30
+                'value' => 30
             ],
             'enable_acp_integration' => [
-                'title'       => 'Enable ACP Integration',
+                'title' => 'Enable ACP Integration',
                 'description' => 'Integrate My2FA into the admin panel.',
                 'optionscode' => 'yesno',
-                'value'       => 1
+                'value' => 1
             ],
             'disable_device_trusting_in_acp' => [
-                'title'       => 'Disable Device Trusting in ACP',
+                'title' => 'Disable Device Trusting in ACP',
                 'description' => 'Disable device trusting for the admin panel, if enabled.',
                 'optionscode' => 'yesno',
-                'value'       => 1
+                'value' => 1
             ],
             'max_verification_attempts' => [
-                'title'       => 'Maximum Verification Attempts',
+                'title' => 'Maximum Verification Attempts',
                 'description' => 'Max number of incorrect attempts before the user is blocked for <strong>5 minutes</strong> during 2FA verification.',
                 'optionscode' => 'numeric',
-                'value'       => 5
+                'value' => 5
             ],
             'forced_groups' => [
-                'title'       => 'Forced Groups',
+                'title' => 'Forced Groups',
                 'description' => 'Select which user groups are forced to have 2FA activated. Suggested for staffer groups.',
                 'optionscode' => 'groupselect',
-                'value'       => ''
+                'value' => ''
             ],
             'totp_board_name' => [
-                'title'       => 'TOTP: QR Code, Board Name',
+                'title' => 'TOTP: QR Code, Board Name',
                 'description' => 'Insert the board name that will be viewed in your user authenticator app.',
                 'optionscode' => 'text',
                 //'value'       => preg_replace('/\s+/', '-', $mybb->settings['bbname'])
-                'value'       => $mybb->settings['bbname']
+                'value' => $mybb->settings['bbname']
             ],
             'totp_qr_code_renderer' => [
-                'title'       => 'TOTP: QR Code Renderer',
+                'title' => 'TOTP: QR Code Renderer',
                 'description' => 'SvgImageBackEnd (suggested) renders SVG files using XMLWriter (libxml); ImagickImageBackEnd renders raster images using the Imagick library.',
                 'optionscode' => My2FA\getMultiOptionscode('radio', [
                     'svg_image_back_end' => 'SvgImageBackEnd',
                     'imagick_image_back_end' => 'ImagickImageBackEnd',
                     'web_api' => 'Web API'
                 ]),
-                'value' => 'svg_image_back_end' 
+                'value' => 'svg_image_back_end'
             ],
             'totp_qr_code_web_api' => [
-                'title'       => 'TOTP: QR Code, Web API',
+                'title' => 'TOTP: QR Code, Web API',
                 'description' => 'If Web API is selected in the QR Code Renderer setting, use {1} to indicate the QR Code URL.',
                 'optionscode' => 'text',
-                'value'       => 'https://api.qrserver.com/v1/create-qr-code/?data={1}'
+                'value' => 'https://api.qrserver.com/v1/create-qr-code/?data={1}'
             ],
             'email_rate_limit' => [
-                'title'       => 'Email: Rate Limit',
+                'title' => 'Email: Rate Limit',
                 'description' => 'The time (in seconds) a user has to wait before requesting to be emailed a new authentication code.',
                 'optionscode' => 'numeric',
-                'value'       => 120
+                'value' => 120
             ]
         ]
     );
 
-    $PL->stylesheet('my2fa',
+    $PL->stylesheet(
+        'my2fa',
         file_get_contents(MY2FA_ROOT . 'stylesheet/main.css'),
         'misc.php?my2fa|usercp.php?my2fa'
     );
@@ -260,24 +265,27 @@ function my2fa_activate()
     $templatesDirIterator = new DirectoryIterator(MY2FA_ROOT . 'templates');
 
     $templates = [];
-    foreach ($templatesDirIterator as $template)
-    {
-        if (!$template->isFile())
+    foreach ($templatesDirIterator as $template) {
+        if (!$template->isFile()) {
             continue;
+        }
 
         $pathName = $template->getPathname();
         $pathInfo = pathinfo($pathName);
 
-        if ($pathInfo['extension'] === 'tpl')
+        if ($pathInfo['extension'] === 'tpl') {
             $templates[$pathInfo['filename']] = file_get_contents($pathName);
+        }
     }
 
-    if ($templates)
+    if ($templates) {
         $PL->templates('my2fa', 'My2FA', $templates);
+    }
 
     require_once MYBB_ROOT . '/inc/adminfunctions_templates.php';
 
-    find_replace_templatesets('usercp_nav_profile',
+    find_replace_templatesets(
+        'usercp_nav_profile',
         '#' . preg_quote('{$changenameop}') . '#i',
         '{$changenameop}<!-- my2faUsercpSetupNav -->'
     );
@@ -291,7 +299,7 @@ function my2fa_deactivate()
     $PL->stylesheet_deactivate('my2fa');
 }
 
-function my2fa_settings_peekers(array &$peekers):array
+function my2fa_settings_peekers(array &$peekers): array
 {
     $myPeekers = [
         'new Peeker($(".setting_my2fa_enable_device_trusting"), $("
@@ -308,7 +316,7 @@ function my2fa_settings_peekers(array &$peekers):array
     $myPeekers = preg_replace('/(?<!new)\s+/', '', $myPeekers);
     array_push($peekers, ...$myPeekers);
 
-	return $peekers;
+    return $peekers;
 }
 
 // dead function
@@ -316,15 +324,15 @@ function my2fa_settings_change()
 {
     global $mybb;
 
-	if(!isset($mybb->input['upsetting']['my2fa_totp_board_name']))
-	{
-		return;
-	}
+    if (!isset($mybb->input['upsetting']['my2fa_totp_board_name'])) {
+        return;
+    }
 
     $totpBoardNameSetting = &$mybb->input['upsetting']['my2fa_totp_board_name'];
 
-    if ($mybb->request_method === 'post' && $totpBoardNameSetting)
+    if ($mybb->request_method === 'post' && $totpBoardNameSetting) {
         $totpBoardNameSetting = preg_replace('/\s+/', '-', $totpBoardNameSetting);
+    }
 }
 
 /*
@@ -335,16 +343,15 @@ function my2fa_global_start()
 {
     global $mybb, $session, $my2faUser;
 
-    if (!$mybb->user['uid'])
+    if (!$mybb->user['uid']) {
         return;
+    }
 
     $my2faUser = $mybb->user;
 
-    if (My2FA\isUserVerificationRequired($mybb->user['uid']))
-    {
+    if (My2FA\isUserVerificationRequired($mybb->user['uid'])) {
         #todo: maybe include possible ajax request
-        if (!My2FA\hasUserBeenRedirected())
-        {
+        if (!My2FA\hasUserBeenRedirected()) {
             My2FA\updateSessionStorage((string)$session->sid, ['redirected' => 1]);
             My2FA\redirectToVerification();
         }
@@ -352,26 +359,27 @@ function my2fa_global_start()
         #todo: inspect method (other plugin fields?)
         $session->load_guest();
 
-        $mybb->user['ismoderator'] = False;
+        $mybb->user['ismoderator'] = false;
         $mybb->post_code = generate_post_check();
-    }
-    else if (
+    } elseif (
         My2FA\doesUserHave2faEnabled($mybb->user['uid']) &&
         !My2FA\isSessionTrusted()
     ) {
         My2FA\setSessionTrusted();
     }
 
-    if (My2FA\isUserForcedToHave2faActivated($mybb->user['uid']))
+    if (My2FA\isUserForcedToHave2faActivated($mybb->user['uid'])) {
         My2FA\redirectToSetup();
+    }
 }
 
 function my2fa_xmlhttp()
 {
     global $mybb, $lang;
 
-    if (!$mybb->user['uid'])
+    if (!$mybb->user['uid']) {
         return;
+    }
 
     if (
         My2FA\isUserVerificationRequired($mybb->user['uid']) ||
@@ -386,8 +394,9 @@ function my2fa_archive_start()
 {
     global $mybb, $lang;
 
-    if (!$mybb->user['uid'])
+    if (!$mybb->user['uid']) {
         return;
+    }
 
     if (
         My2FA\isUserVerificationRequired($mybb->user['uid']) ||
@@ -399,20 +408,21 @@ function my2fa_archive_start()
 }
 
 #todo: add password_confirmed_at? also in other inputs with password confirmation
-function my2fa_datahandler_login_complete_end(\LoginDataHandler &$userHandler): \LoginDataHandler
+function my2fa_datahandler_login_complete_end(LoginDataHandler &$userHandler): LoginDataHandler
 {
     global $session;
 
-    if (My2FA\isUserVerificationRequired($userHandler->login_data['uid']))
+    if (My2FA\isUserVerificationRequired($userHandler->login_data['uid'])) {
         My2FA\updateSessionStorage((string)$session->sid, ['redirected' => 0]);
+    }
 
-	return $userHandler;
+    return $userHandler;
 }
 
 function my2fa_misc_start()
 {
     global $mybb, $lang, $my2faUser,
-    $headerinclude, $header, $footer, $theme;
+           $headerinclude, $header, $footer, $theme;
 
     if (
         $my2faUser['uid'] &&
@@ -423,9 +433,9 @@ function my2fa_misc_start()
 
         $verificationContent = My2FA\getVerificationForm($my2faUser, 'misc.php?action=my2fa');
 
-		$miscVerification =eval(My2FA\template('misc_verification'));
+        $miscVerification = eval(My2FA\template('misc_verification'));
 
-		output_page($miscVerification);
+        output_page($miscVerification);
 
         exit;
     }
@@ -437,7 +447,7 @@ function my2fa_usercp_menu_built()
 
     My2FA\loadLanguage();
 
-	$my2faUsercpSetupNav =eval(My2FA\template('usercp_setup_nav'));
+    $my2faUsercpSetupNav = eval(My2FA\template('usercp_setup_nav'));
 
     $usercpnav = str_replace('<!-- my2faUsercpSetupNav -->', $my2faUsercpSetupNav, $usercpnav);
 }
@@ -445,22 +455,22 @@ function my2fa_usercp_menu_built()
 function my2fa_usercp_start()
 {
     global $mybb, $lang,
-    $headerinclude, $header, $footer, $theme, $usercpnav;
+           $headerinclude, $header, $footer, $theme, $usercpnav;
 
-    if ($mybb->input['action'] === 'my2fa')
-    {
+    if ($mybb->input['action'] === 'my2fa') {
         My2FA\loadLanguage();
         My2FA\passwordConfirmationCheck('usercp.php?action=my2fa', 20);
 
         $forcedGroupNotice = null;
-        if (My2FA\isUserForcedToHave2faActivated($mybb->user['uid']))
-			$forcedGroupNotice = eval(template('setup_notice_forced_group'));
+        if (My2FA\isUserForcedToHave2faActivated($mybb->user['uid'])) {
+            $forcedGroupNotice = eval(template('setup_notice_forced_group'));
+        }
 
         $setupContent = My2FA\getSetupForm($mybb->user, 'usercp.php?action=my2fa');
 
-		$usercpSetup =eval(My2FA\template('usercp_setup'));
+        $usercpSetup = eval(My2FA\template('usercp_setup'));
 
-		output_page($usercpSetup);
+        output_page($usercpSetup);
 
         exit;
     }
@@ -470,48 +480,42 @@ function my2fa_build_wol_location(array &$hook_arguments): array
 {
     global $lang;
 
-    if (strpos($hook_arguments['user_activity']['location'], 'usercp.php?action=my2fa') !== False)
-    {
+    if (strpos($hook_arguments['user_activity']['location'], 'usercp.php?action=my2fa') !== false) {
         My2FA\loadLanguage();
 
-		$hook_arguments['user_activity']['activity'] = 'my2fa_usercp_setup';
-		$hook_arguments['location_name'] = $lang->my2fa_usercp_setup_wol;
-    }
-    else if (strpos($hook_arguments['user_activity']['location'], 'misc.php?action=my2fa') !== False)
-    {
+        $hook_arguments['user_activity']['activity'] = 'my2fa_usercp_setup';
+        $hook_arguments['location_name'] = $lang->my2fa_usercp_setup_wol;
+    } elseif (strpos($hook_arguments['user_activity']['location'], 'misc.php?action=my2fa') !== false) {
         My2FA\loadLanguage();
 
-		$hook_arguments['user_activity']['activity'] = 'my2fa_misc_verification';
-		$hook_arguments['location_name'] = $lang->my2fa_misc_verification_wol;
+        $hook_arguments['user_activity']['activity'] = 'my2fa_misc_verification';
+        $hook_arguments['location_name'] = $lang->my2fa_misc_verification_wol;
     }
 
-	return $hook_arguments;
+    return $hook_arguments;
 }
 
 function my2fa_admin_load()
 {
     global $mybb, $lang, $page;
 
-    if (My2FA\isAdminVerificationRequired($mybb->user['uid']))
-    {
+    if (My2FA\isAdminVerificationRequired($mybb->user['uid'])) {
         My2FA\loadUserLanguage();
 
         //$mybb->input['redirect_url'] ??= My2FA\getCurrentUrl(); // PHP 7.4
         $mybb->input['redirect_url'] = $mybb->input['redirect_url'] ?? My2FA\getCurrentUrl();
 
-        $verificationContent = My2FA\getVerificationForm($mybb->user, 'index.php?action=my2fa', False, False);
+        $verificationContent = My2FA\getVerificationForm($mybb->user, 'index.php?action=my2fa', false, false);
 
         exit(My2FA\getAdminVerificationPage($verificationContent));
-    }
-    else if (
+    } elseif (
         My2FA\doesUserHave2faEnabled($mybb->user['uid']) &&
         !My2FA\isAdminSessionTrusted()
     ) {
         My2FA\setAdminSessionTrusted();
     }
 
-    if (My2FA\isUserForcedToHave2faActivated($mybb->user['uid']))
-    {
+    if (My2FA\isUserForcedToHave2faActivated($mybb->user['uid'])) {
         My2FA\loadUserLanguage();
 
         $page->output_header($lang->access_denied);
@@ -525,26 +529,28 @@ function my2fa_task_hourlycleanup()
     global $db;
 
     // 1 hour old logs
-    $db->delete_query('my2fa_logs', "inserted_on < " . (TIME_NOW - 60*60));
+    $db->delete_query('my2fa_logs', 'inserted_on < ' . (TIME_NOW - 60 * 60));
 }
 
 function my2fa_task_dailycleanup()
 {
     global $db;
 
-    $db->delete_query('my2fa_tokens', "expire_on < " . TIME_NOW);
+    $db->delete_query('my2fa_tokens', 'expire_on < ' . TIME_NOW);
 }
 
 function my2fa_admin_recount_rebuild_output()
 {
     global $lang, $form, $form_container;
 
-    $form_container->output_cell("
+    $form_container->output_cell(
+        "
         <label>Rebuild My2FA (users.has_my2fa)</label>
         <div class=\"description\">
             Update user has_my2fa to reflect the correct value. Use it whenever you enable or disable a My2FA method.
         </div>
-    ");
+    "
+    );
     $form_container->output_cell($lang->na);
     $form_container->output_cell(
         $form->generate_submit_button($lang->go, ['name' => 'do_rebuild_has_my2fa_values'])
@@ -557,13 +563,13 @@ function my2fa_admin_do_recount_rebuild()
 {
     global $db, $mybb;
 
-    if (!isset($mybb->input['do_rebuild_has_my2fa_values']))
+    if (!isset($mybb->input['do_rebuild_has_my2fa_values'])) {
         return;
+    }
 
     $methodIdsStr = implode("','", array_column(My2FA\selectMethods(), 'id'));
 
-    if ($methodIdsStr)
-    {
+    if ($methodIdsStr) {
         $query = $db->simple_select(
             'my2fa_user_methods',
             'DISTINCT uid',
@@ -571,8 +577,7 @@ function my2fa_admin_do_recount_rebuild()
         );
 
         $validUserIds = [];
-        while ($userMethod = $db->fetch_array($query))
-        {
+        while ($userMethod = $db->fetch_array($query)) {
             $validUserIds[] = $userMethod['uid'];
         }
 

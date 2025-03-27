@@ -4,15 +4,20 @@ declare(strict_types=1);
 
 namespace My2FA;
 
-function getVerificationForm(array $user, string $verificationUrl, bool $includeBreadcrumb = True, bool $includeExtraRows = True): ?string
-{
+function getVerificationForm(
+    array $user,
+    string $verificationUrl,
+    bool $includeBreadcrumb = true,
+    bool $includeExtraRows = true
+): ?string {
     global $mybb, $lang, $theme;
 
     $output = null;
     $mybb->input['method'] = $mybb->get_input('method');
 
-    if (!isset($theme))
+    if (!isset($theme)) {
         $theme = getDefaultTheme();
+    }
 
     $methods = selectMethods();
     $userMethods = selectUserMethods($user['uid']);
@@ -36,19 +41,17 @@ function getVerificationForm(array $user, string $verificationUrl, bool $include
 
         $method = $methods[$mybb->input['method']];
 
-        if ($includeBreadcrumb)
-        {
+        if ($includeBreadcrumb) {
             add_breadcrumb($lang->my2fa_title, $verificationUrl . $redirectUrlQueryStr);
             add_breadcrumb($method['definitions']['name']);
         }
 
-		$verificationFormButtons = eval(template('verification_form_buttons'));
+        $verificationFormButtons = eval(template('verification_form_buttons'));
 
-		$verificationFormTrustDeviceOption = '';
+        $verificationFormTrustDeviceOption = '';
 
         $verificationTrustDeviceOption = null;
-        if (isDeviceTrustingAllowed())
-        {
+        if (isDeviceTrustingAllowed()) {
             $lang->my2fa_verification_trust_device = $lang->sprintf(
                 $lang->my2fa_verification_trust_device,
                 setting('device_trusting_duration_in_days')
@@ -59,48 +62,50 @@ function getVerificationForm(array $user, string $verificationUrl, bool $include
             );
 
             $checkboxInputState = 'checked';
-            if (isset($mybb->input['trust_device']) && $mybb->input['trust_device'] !== '1')
-            {
+            if (isset($mybb->input['trust_device']) && $mybb->input['trust_device'] !== '1') {
                 $checkboxInputState = null;
             }
 
-			$verificationFormTrustDeviceOption = eval(template('verification_form_trust_device_option'));
+            $verificationFormTrustDeviceOption = eval(template('verification_form_trust_device_option'));
         }
 
-        $output = $method['className']::handleVerification($user, $verificationUrl, compact(
-            'verificationUrl',
-            'redirectUrl',
-            'redirectUrlQueryStr',
-            'verificationFormButtons',
-            'verificationFormTrustDeviceOption'
-        ));
-    }
-    else
-    {
-        if ($includeBreadcrumb)
+        $output = $method['className']::handleVerification(
+            $user,
+            $verificationUrl,
+            compact(
+                'verificationUrl',
+                'redirectUrl',
+                'redirectUrlQueryStr',
+                'verificationFormButtons',
+                'verificationFormTrustDeviceOption'
+            )
+        );
+    } else {
+        if ($includeBreadcrumb) {
             add_breadcrumb($lang->my2fa_title);
+        }
 
         $verificationMethodRows = null;
-        foreach ($userMethods as $userMethod)
-        {
+        foreach ($userMethods as $userMethod) {
             $method = $methods[$userMethod['method_id']];
 
-			$verificationMethodRows .= eval(template('verification_methods_row'));
+            $verificationMethodRows .= eval(template('verification_methods_row'));
         }
 
-		$verificationExtraRows = '';
+        $verificationExtraRows = '';
 
-        if ($includeExtraRows)
-			$verificationExtraRows .= eval(template('verification_extra_rows'));
+        if ($includeExtraRows) {
+            $verificationExtraRows .= eval(template('verification_extra_rows'));
+        }
 
-		$output = eval(template('verification'));
+        $output = eval(template('verification'));
     }
 
     return $output;
 }
 
 #todo: order of activated methods
-function getSetupForm(array $user, string $setupUrl, bool $includeBreadcrumb = True): ?string
+function getSetupForm(array $user, string $setupUrl, bool $includeBreadcrumb = true): ?string
 {
     global $mybb, $lang, $theme;
 
@@ -110,8 +115,7 @@ function getSetupForm(array $user, string $setupUrl, bool $includeBreadcrumb = T
     $methods = selectMethods();
     $userMethods = selectUserMethods($user['uid']);
 
-    if (isset($methods[$mybb->input['method']]))
-    {
+    if (isset($methods[$mybb->input['method']])) {
         verify_post_check($mybb->get_input('my_post_key'));
 
         $method = $methods[$mybb->input['method']];
@@ -122,9 +126,7 @@ function getSetupForm(array $user, string $setupUrl, bool $includeBreadcrumb = T
             isset($userMethods[$mybb->input['method']])
         ) {
             $output = $method['className']::handleDeactivation($user, $setupUrl);
-        }
-        else
-        {
+        } else {
             add_breadcrumb($lang->my2fa_title, $setupUrl);
             add_breadcrumb($method['definitions']['name']);
 
@@ -133,13 +135,16 @@ function getSetupForm(array $user, string $setupUrl, bool $includeBreadcrumb = T
                 $method['className']::canBeDeactivated() &&
                 !isset($userMethods[$mybb->input['method']])
             ) {
-				$setupFormButtons = eval(template('setup_form_buttons'));
+                $setupFormButtons = eval(template('setup_form_buttons'));
 
-                $output = $method['className']::handleActivation($user, $setupUrl, compact(
-                    'setupFormButtons'
-                ));
-            }
-            else if (
+                $output = $method['className']::handleActivation(
+                    $user,
+                    $setupUrl,
+                    compact(
+                        'setupFormButtons'
+                    )
+                );
+            } elseif (
                 $mybb->get_input('manage') === '1' &&
                 $method['className']::canBeManaged() &&
                 isset($userMethods[$mybb->input['method']])
@@ -147,23 +152,18 @@ function getSetupForm(array $user, string $setupUrl, bool $includeBreadcrumb = T
                 $output = $method['className']::handleManagement($user, $setupUrl);
             }
         }
-    }
-    else
-    {
+    } else {
         add_breadcrumb($lang->my2fa_title);
 
         $setupMethodRows = null;
-        foreach ($methods as $method)
-        {
-            if (!$method['className']::canBeActivated())
+        foreach ($methods as $method) {
+            if (!$method['className']::canBeActivated()) {
                 continue;
-
-            if (!isset($userMethods[$method['id']]))
-            {
-				$setupMethodRows .= eval(template('setup_methods_row'));
             }
-            else
-            {
+
+            if (!isset($userMethods[$method['id']])) {
+                $setupMethodRows .= eval(template('setup_methods_row'));
+            } else {
                 $userMethod = $userMethods[$method['id']];
 
                 $lang->my2fa_setup_method_activation_date = $lang->sprintf(
@@ -175,13 +175,15 @@ function getSetupForm(array $user, string $setupUrl, bool $includeBreadcrumb = T
                     $method['definitions']['name']
                 );
 
-                if ($method['className']::canBeDeactivated())
-					$setupDeactivateButton = eval(template('setup_button_deactivate'));
+                if ($method['className']::canBeDeactivated()) {
+                    $setupDeactivateButton = eval(template('setup_button_deactivate'));
+                }
 
-                if ($method['className']::canBeManaged())
-					$setupManageButton = eval(template('setup_button_manage'));
+                if ($method['className']::canBeManaged()) {
+                    $setupManageButton = eval(template('setup_button_manage'));
+                }
 
-				$setupMethodRows .= eval(template('setup_methods_row_enabled'));
+                $setupMethodRows .= eval(template('setup_methods_row_enabled'));
             }
         }
 
@@ -190,69 +192,63 @@ function getSetupForm(array $user, string $setupUrl, bool $includeBreadcrumb = T
             isDeviceTrustingAllowed() &&
             doesUserHave2faEnabled($user['uid']) &&
             (
-                $userTokens = selectUserTokens($user['uid'], [], [
-                    'order_by' => 'generated_on',
-                    'order_dir' => 'DESC'
-                ])
+            $userTokens = selectUserTokens($user['uid'], [], [
+                'order_by' => 'generated_on',
+                'order_dir' => 'DESC'
+            ])
             )
         ) {
             $currentUserToken = $userTokens[$mybb->cookies['my2fa_token']] ?? [];
             $otherUserTokens = $userTokens;
 
-            if ($currentUserToken)
+            if ($currentUserToken) {
                 unset($otherUserTokens[$currentUserToken['tid']]);
+            }
 
-            if ($mybb->get_input('remove_trusted_devices') === '1')
-            {
+            if ($mybb->get_input('remove_trusted_devices') === '1') {
                 verify_post_check($mybb->get_input('my_post_key'));
 
-                if ($mybb->get_input('current') === '1' && $currentUserToken)
-                {
-                    deleteUserTokens($user['uid'], (array) $currentUserToken['tid']);
+                if ($mybb->get_input('current') === '1' && $currentUserToken) {
+                    deleteUserTokens($user['uid'], (array)$currentUserToken['tid']);
                     redirect($setupUrl, $lang->my2fa_current_trusted_device_removed_success);
-                }
-                else if ($mybb->get_input('others') === '1' && $otherUserTokens)
-                {
+                } elseif ($mybb->get_input('others') === '1' && $otherUserTokens) {
                     deleteUserTokens($user['uid'], array_column($otherUserTokens, 'tid'));
                     redirect($setupUrl, $lang->my2fa_other_trusted_devices_removed_success);
                 }
             }
 
             $currentTrustedDeviceRow = null;
-            if ($currentUserToken)
-            {
+            if ($currentUserToken) {
                 $lang->my2fa_setup_current_trusted_device = $lang->sprintf(
                     $lang->my2fa_setup_current_trusted_device,
                     my_date('relative', $userTokens[$mybb->cookies['my2fa_token']]['expire_on'])
                 );
 
-				$currentTrustedDeviceRow = eval(template('setup_trusted_devices_row_current'));
+                $currentTrustedDeviceRow = eval(template('setup_trusted_devices_row_current'));
             }
 
             $otherTrustedDevicesRow = null;
-            if ($otherUserTokens)
-            {
+            if ($otherUserTokens) {
                 $lang->my2fa_setup_other_trusted_devices = $lang->sprintf(
                     $lang->my2fa_setup_other_trusted_devices,
                     count($otherUserTokens)
                 );
 
                 $otherTrustedDevicesLogRows = null;
-                foreach($otherUserTokens as $otherUserToken)
-                {
+                foreach ($otherUserTokens as $otherUserToken) {
                     $otherUserToken['generated_on_formatted'] = my_date('normal', $otherUserToken['generated_on']);
                     $otherUserToken['expire_on_formatted'] = my_date('normal', $otherUserToken['expire_on']);
 
-					$otherTrustedDevicesLogRows .= eval(template('setup_trusted_devices_row_others_row_log'));
+                    $otherTrustedDevicesLogRows .= eval(template('setup_trusted_devices_row_others_row_log'));
                 }
 
-				$otherTrustedDevicesRow = eval(template('setup_trusted_devices_row_others'));
+                $otherTrustedDevicesRow = eval(template('setup_trusted_devices_row_others'));
             }
 
-			$trustedDevices = eval(template('setup_trusted_devices'));
+            $trustedDevices = eval(template('setup_trusted_devices'));
         }
 
-		$output = eval(template('setup'));
+        $output = eval(template('setup'));
     }
 
     return $output;
@@ -268,8 +264,7 @@ function getAdminVerificationPage(string $verificationContent): string
     $stylesheetLocations = getDefaultGlobalStylesheetLocations();
 
     $stylesheetHtml = null;
-    foreach ($stylesheetLocations as $stylesheetLocation)
-    {
+    foreach ($stylesheetLocations as $stylesheetLocation) {
         $stylesheetHtml .= <<<HTML
 <link rel="stylesheet" type="text/css" href="{$mybb->settings['bburl']}/{$stylesheetLocation}" />\n\t
 HTML;

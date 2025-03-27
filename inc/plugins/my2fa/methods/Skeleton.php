@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace My2FA\Methods;
 
+use function My2FA\selectMethods;
+use function My2FA\selectUserMethods;
+use function My2FA\template;
+
 class Skeleton extends AbstractMethod
 {
     public const METHOD_ID = 22;
@@ -19,31 +23,24 @@ class Skeleton extends AbstractMethod
 
         extract($viewParams);
 
-        $method = \My2FA\selectMethods()[self::METHOD_ID];
-        $userMethod = \My2FA\selectUserMethods($user['uid'], (array) self::METHOD_ID)[self::METHOD_ID];
+        $method = selectMethods()[self::METHOD_ID];
+        $userMethod = selectUserMethods($user['uid'], (array)self::METHOD_ID)[self::METHOD_ID];
 
-        if (self::hasUserReachedMaximumAttempts($user['uid']))
-        {
-            $errors = inline_error((array) $lang->my2fa_verification_blocked_error);
-        }
-        else if (isset($mybb->input['otp']))
-        {
-            if (self::isOtpValid($mybb->input['otp']))
-            {
+        if (self::hasUserReachedMaximumAttempts($user['uid'])) {
+            $errors = inline_error((array)$lang->my2fa_verification_blocked_error);
+        } elseif (isset($mybb->input['otp'])) {
+            if (self::isOtpValid($mybb->input['otp'])) {
                 self::completeVerification($user['uid']);
-            }
-            else
-            {
+            } else {
                 self::recordFailedAttempt($user['uid']);
 
                 $errors = self::hasUserReachedMaximumAttempts($user['uid'])
-                    ? inline_error((array) $lang->my2fa_verification_blocked_error)
-                    : inline_error((array) $lang->my2fa_code_error)
-                ;
+                    ? inline_error((array)$lang->my2fa_verification_blocked_error)
+                    : inline_error((array)$lang->my2fa_code_error);
             }
         }
 
-		return eval(\My2FA\template('method_skeleton_verification'));
+        return eval(template('method_skeleton_verification'));
     }
 
     public static function handleActivation(array $user, string $setupUrl, array $viewParams = []): string
@@ -52,32 +49,28 @@ class Skeleton extends AbstractMethod
 
         extract($viewParams);
 
-        $method = \My2FA\selectMethods()[self::METHOD_ID];
+        $method = selectMethods()[self::METHOD_ID];
 
-        if (isset($mybb->input['otp']))
-        {
-            if (self::isOtpValid($mybb->input['otp']))
-            {
+        if (isset($mybb->input['otp'])) {
+            if (self::isOtpValid($mybb->input['otp'])) {
                 self::completeActivation($user['uid'], $setupUrl);
-            }
-            else
-            {
-                $errors = inline_error((array) $lang->my2fa_code_error);
+            } else {
+                $errors = inline_error((array)$lang->my2fa_code_error);
             }
         }
 
-		return eval(\My2FA\template('method_skeleton_activation'));
+        return eval(template('method_skeleton_activation'));
     }
 
     public static function handleDeactivation(array $user, string $setupUrl, array $viewParams = []): string
     {
         self::completeDeactivation($user['uid'], $setupUrl);
 
-		return '';
+        return '';
     }
 
     private static function isOtpValid(string $otp): bool
     {
-        return (int) $otp === 123;
+        return (int)$otp === 123;
     }
 }

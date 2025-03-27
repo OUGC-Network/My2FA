@@ -4,17 +4,17 @@ declare(strict_types=1);
 
 namespace My2FA;
 
+use function my_unsetcookie;
+
 function selectMethods(): array
 {
     static $methods;
 
-    if (!isset($methods))
-    {
+    if (!isset($methods)) {
         $filenames = scandir(MY2FA_ROOT . 'methods');
 
         $methods = [];
-        foreach ($filenames as $filename)
-        {
+        foreach ($filenames as $filename) {
             $className = 'My2FA\Methods\\' . basename($filename, '.php');
 
             if (
@@ -50,12 +50,10 @@ function selectUserMethods(int $userId, array $methodIds = [], array $options = 
 
     $methodIds = $methodIds
         ? array_intersect($methodIds, array_column($methods, 'id'))
-        : array_column($methods, 'id')
-    ;
+        : array_column($methods, 'id');
     $methodIdsStr = implode(',', $methodIds);
 
-    if ($methodIdsStr)
-    {
+    if ($methodIdsStr) {
         $query = $db->simple_select(
             'my2fa_user_methods',
             '*',
@@ -63,9 +61,8 @@ function selectUserMethods(int $userId, array $methodIds = [], array $options = 
             $options
         );
 
-        while ($userMethod = $db->fetch_array($query))
-        {
-            $userMethod['data'] = json_decode($userMethod['data'], True) ?? [];
+        while ($userMethod = $db->fetch_array($query)) {
+            $userMethod['data'] = json_decode($userMethod['data'], true) ?? [];
             $userMethods[$userMethod['method_id']] = $userMethod;
         }
     }
@@ -80,8 +77,7 @@ function countUserMethods(int $userId): int
     $count = 0;
     $methodIdsStr = implode(',', array_column(selectMethods(), 'id'));
 
-    if ($methodIdsStr)
-    {
+    if ($methodIdsStr) {
         $count = $db->fetch_field(
             $db->simple_select(
                 'my2fa_user_methods',
@@ -101,8 +97,7 @@ function selectUserTokens(int $userId, array $tokenIds = [], array $options = []
 
     $whereClause = null;
 
-    if ($tokenIds)
-    {
+    if ($tokenIds) {
         $tokenIds = getDataItemsEscaped($tokenIds);
         $whereClause = " AND tid IN ('" . implode("','", $tokenIds) . "')";
     }
@@ -115,8 +110,7 @@ function selectUserTokens(int $userId, array $tokenIds = [], array $options = []
     );
 
     $userTokens = [];
-    while ($userToken = $db->fetch_array($query))
-    {
+    while ($userToken = $db->fetch_array($query)) {
         $userTokens[$userToken['tid']] = $userToken;
     }
 
@@ -133,15 +127,14 @@ function selectUserLogs(int $userId, string $event, int $secondsInterval, array 
         "
             uid = {$userId} AND
             event = '" . $db->escape_string($event) . "' AND
-            inserted_on > " . (TIME_NOW - $secondsInterval) . "
-        ",
+            inserted_on > " . (TIME_NOW - $secondsInterval) . '
+        ',
         $options
     );
 
     $userLogs = [];
-    while ($userLog = $db->fetch_array($query))
-    {
-        $userLog['data'] = json_decode($userLog['data'], True) ?? [];
+    while ($userLog = $db->fetch_array($query)) {
+        $userLog['data'] = json_decode($userLog['data'], true) ?? [];
         $userLogs[] = $userLog;
     }
 
@@ -159,8 +152,8 @@ function countUserLogs(int $userId, string $event, int $secondsInterval): int
             "
                 uid = {$userId} AND
                 event = '" . $db->escape_string($event) . "' AND
-                inserted_on > " . (TIME_NOW - $secondsInterval) . "
-            "
+                inserted_on > " . (TIME_NOW - $secondsInterval) . '
+            '
         ),
         'count'
     );
@@ -171,8 +164,7 @@ function selectSessionStorage(string $sessionId): array
     global $db;
     static $sessionsStorage;
 
-    if (!isset($sessionsStorage[$sessionId]))
-    {
+    if (!isset($sessionsStorage[$sessionId])) {
         $sessionStorage = $db->fetch_field(
             $db->simple_select(
                 'sessions',
@@ -182,7 +174,7 @@ function selectSessionStorage(string $sessionId): array
             'my2fa_storage'
         );
 
-        $sessionsStorage[$sessionId] = json_decode($sessionStorage, True) ?? [];
+        $sessionsStorage[$sessionId] = json_decode($sessionStorage, true) ?? [];
     }
 
     return $sessionsStorage[$sessionId];
@@ -193,14 +185,10 @@ function selectUserHasMy2faField(int $userId): bool
     global $db, $mybb;
     static $usersHasMy2faField;
 
-    if (!isset($usersHasMy2faField[$userId]))
-    {
-        if ($userId === (int) $mybb->user['uid'])
-        {
+    if (!isset($usersHasMy2faField[$userId])) {
+        if ($userId === (int)$mybb->user['uid']) {
             $usersHasMy2faField[$userId] = $mybb->user['has_my2fa'];
-        }
-        else
-        {
+        } else {
             $usersHasMy2faField[$userId] = $db->fetch_field(
                 $db->simple_select('users', 'has_my2fa', "uid = {$userId}"),
                 'has_my2fa'
@@ -215,10 +203,11 @@ function insertUserMethod(array $data): array
 {
     global $db;
 
-    if (!empty($data['data']))
+    if (!empty($data['data'])) {
         $data['data'] = json_encode($data['data']);
-    else
+    } else {
         unset($data['data']);
+    }
 
     $data = getDataItemsEscaped($data);
 
@@ -226,8 +215,9 @@ function insertUserMethod(array $data): array
         'activated_on' => TIME_NOW
     ];
 
-    if (!selectUserHasMy2faField($data['uid']))
-        updateUserHasMy2faField($data['uid'], True);
+    if (!selectUserHasMy2faField($data['uid'])) {
+        updateUserHasMy2faField($data['uid'], true);
+    }
 
     $db->insert_query('my2fa_user_methods', $data);
 
@@ -253,10 +243,11 @@ function insertUserLog(array $data): array
 {
     global $db;
 
-    if (!empty($data['data']))
+    if (!empty($data['data'])) {
         $data['data'] = json_encode($data['data']);
-    else
+    } else {
         unset($data['data']);
+    }
 
     $data = getDataItemsEscaped($data);
 
@@ -295,10 +286,11 @@ function updateUserHasMy2faField(int $userId, bool $hasMy2faField): void
 {
     global $db, $mybb;
 
-    $db->update_query('users', ['has_my2fa' => (int) $hasMy2faField], "uid = {$userId}");
+    $db->update_query('users', ['has_my2fa' => (int)$hasMy2faField], "uid = {$userId}");
 
-    if ($userId === (int) $mybb->user['uid'])
-        $mybb->user['has_my2fa'] = (int) $hasMy2faField;
+    if ($userId === (int)$mybb->user['uid']) {
+        $mybb->user['has_my2fa'] = (int)$hasMy2faField;
+    }
 }
 
 function deleteUserMethod(int $userId, int $methodId): void
@@ -306,9 +298,8 @@ function deleteUserMethod(int $userId, int $methodId): void
     global $db;
 
     // if you want, add untrust session too (not necessary, but for convention)
-    if (countUserMethods($userId) === 1)
-    {
-        updateUserHasMy2faField($userId, False);
+    if (countUserMethods($userId) === 1) {
+        updateUserHasMy2faField($userId, false);
         deleteUserTokens($userId);
     }
 
@@ -324,16 +315,16 @@ function deleteUserTokens(int $userId, array $tokenIds = [])
 
     $whereClause = null;
 
-    if ($tokenIds)
-    {
+    if ($tokenIds) {
         $tokenIds = getDataItemsEscaped($tokenIds);
         $whereClause = " AND tid IN ('" . implode("','", $tokenIds) . "')";
     }
 
     $db->delete_query('my2fa_tokens', "uid = {$userId}{$whereClause}");
 
-    if (!$tokenIds || in_array($mybb->cookies['my2fa_token'], $tokenIds))
-        \my_unsetcookie('my2fa_token');
+    if (!$tokenIds || in_array($mybb->cookies['my2fa_token'], $tokenIds)) {
+        my_unsetcookie('my2fa_token');
+    }
 }
 
 function deleteFromSessionStorage(string $sessionId, array $sessionKeys)
