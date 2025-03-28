@@ -23,18 +23,20 @@ class Skeleton extends AbstractMethod
 
         extract($viewParams);
 
-        $method = selectMethods()[self::METHOD_ID];
-        $userMethod = selectUserMethods($user['uid'], (array)self::METHOD_ID)[self::METHOD_ID];
+        $userID = (int)$user['uid'];
 
-        if (self::hasUserReachedMaximumAttempts($user['uid'])) {
+        $method = selectMethods()[self::METHOD_ID];
+        $userMethod = selectUserMethods($userID, (array)self::METHOD_ID)[self::METHOD_ID];
+
+        if (self::hasUserReachedMaximumAttempts($userID)) {
             $errors = inline_error((array)$lang->my2fa_verification_blocked_error);
         } elseif (isset($mybb->input['otp'])) {
             if (self::isOtpValid($mybb->input['otp'])) {
-                self::completeVerification($user['uid']);
+                self::completeVerification($userID);
             } else {
-                self::recordFailedAttempt($user['uid']);
+                self::recordFailedAttempt($userID);
 
-                $errors = self::hasUserReachedMaximumAttempts($user['uid'])
+                $errors = self::hasUserReachedMaximumAttempts($userID)
                     ? inline_error((array)$lang->my2fa_verification_blocked_error)
                     : inline_error((array)$lang->my2fa_code_error);
             }
@@ -53,7 +55,7 @@ class Skeleton extends AbstractMethod
 
         if (isset($mybb->input['otp'])) {
             if (self::isOtpValid($mybb->input['otp'])) {
-                self::completeActivation($user['uid'], $setupUrl);
+                self::completeActivation((int)$user['uid'], $setupUrl);
             } else {
                 $errors = inline_error((array)$lang->my2fa_code_error);
             }
@@ -64,7 +66,7 @@ class Skeleton extends AbstractMethod
 
     public static function handleDeactivation(array $user, string $setupUrl, array $viewParams = []): string
     {
-        self::completeDeactivation($user['uid'], $setupUrl);
+        self::completeDeactivation((int)$user['uid'], $setupUrl);
 
         return '';
     }

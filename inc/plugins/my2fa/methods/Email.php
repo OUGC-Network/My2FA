@@ -39,23 +39,25 @@ class Email extends AbstractMethod
 
         extract($viewParams);
 
-        $method = selectMethods()[self::METHOD_ID];
-        $userMethod = selectUserMethods($user['uid'], (array)self::METHOD_ID)[self::METHOD_ID];
+        $userID = (int)$user['uid'];
 
-        if (self::hasUserReachedMaximumAttempts($user['uid'])) {
+        $method = selectMethods()[self::METHOD_ID];
+        $userMethod = selectUserMethods($userID, (array)self::METHOD_ID)[self::METHOD_ID];
+
+        if (self::hasUserReachedMaximumAttempts($userID)) {
             $errors = inline_error((array)$lang->my2fa_verification_blocked_error);
         } elseif (isset($mybb->input['code'])) {
-            if (self::isUserCodeValid($user['uid'], $mybb->input['code'])) {
-                self::recordSuccessfulAttempt($user['uid'], $mybb->input['code']);
-                self::completeVerification($user['uid']);
+            if (self::isUserCodeValid($userID, $mybb->input['code'])) {
+                self::recordSuccessfulAttempt($userID, $mybb->input['code']);
+                self::completeVerification($userID);
             } else {
-                self::recordFailedAttempt($user['uid']);
+                self::recordFailedAttempt($userID);
 
-                $errors = self::hasUserReachedMaximumAttempts($user['uid'])
+                $errors = self::hasUserReachedMaximumAttempts($userID)
                     ? inline_error((array)$lang->my2fa_verification_blocked_error)
                     : inline_error((array)$lang->my2fa_code_error);
             }
-        } elseif (self::canUserRequestCode($user['uid'])) {
+        } elseif (self::canUserRequestCode($userID)) {
             self::sendCode($user);
         } else {
             $errors = inline_error(
@@ -82,8 +84,12 @@ class Email extends AbstractMethod
 
         $method = selectMethods()[self::METHOD_ID];
 
+        $userID = (int)$user['uid'];
+
+        $errors = '';
+
         if ($mybb->get_input('request_code') === '1') {
-            if (self::canUserRequestCode($user['uid'])) {
+            if (self::canUserRequestCode($userID)) {
                 self::sendCode($user);
             } else {
                 unset($mybb->input['confirm_code']);
@@ -99,9 +105,9 @@ class Email extends AbstractMethod
 
         if ($mybb->get_input('confirm_code') === '1') {
             if (isset($mybb->input['code'])) {
-                if (self::isUserCodeValid($user['uid'], $mybb->input['code'])) {
-                    self::recordSuccessfulAttempt($user['uid'], $mybb->input['code']);
-                    self::completeActivation($user['uid'], $setupUrl);
+                if (self::isUserCodeValid($userID, $mybb->input['code'])) {
+                    self::recordSuccessfulAttempt($userID, $mybb->input['code']);
+                    self::completeActivation($userID, $setupUrl);
                 } else {
                     $errors = inline_error((array)$lang->my2fa_code_error);
                 }
@@ -122,7 +128,7 @@ class Email extends AbstractMethod
 
     public static function handleDeactivation(array $user, string $setupUrl, array $viewParams = []): string
     {
-        self::completeDeactivation($user['uid'], $setupUrl);
+        self::completeDeactivation((int)$user['uid'], $setupUrl);
 
         return '';
     }
@@ -164,7 +170,7 @@ class Email extends AbstractMethod
         $code = my_rand(100000, 999999);
 
         insertUserLog([
-            'uid' => $user['uid'],
+            'uid' => (int)$user['uid'],
             'event' => 'email_code_requested',
             'data' => ['code' => $code],
         ]);

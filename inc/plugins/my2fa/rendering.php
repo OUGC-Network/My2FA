@@ -20,7 +20,7 @@ function getVerificationForm(
     }
 
     $methods = selectMethods();
-    $userMethods = selectUserMethods($user['uid']);
+    $userMethods = selectUserMethods((int)$user['uid']);
 
     // here I can add a check that if usermethods is empty, skip verification
     // but this should not happen if has_my2fa is correctly rebuilt every time
@@ -112,8 +112,10 @@ function getSetupForm(array $user, string $setupUrl, bool $includeBreadcrumb = t
     $output = null;
     $mybb->input['method'] = $mybb->get_input('method');
 
+    $userID = (int)$user['uid'];
+
     $methods = selectMethods();
-    $userMethods = selectUserMethods($user['uid']);
+    $userMethods = selectUserMethods($userID);
 
     if (isset($methods[$mybb->input['method']])) {
         verify_post_check($mybb->get_input('my_post_key'));
@@ -168,7 +170,7 @@ function getSetupForm(array $user, string $setupUrl, bool $includeBreadcrumb = t
 
                 $lang->my2fa_setup_method_activation_date = $lang->sprintf(
                     $lang->my2fa_setup_method_activation_date,
-                    my_date($mybb->settings['dateformat'], $userMethod['activated_on'])
+                    my_date($mybb->settings['dateformat'], $userMethod['activated_on'] ?? 0)
                 );
                 $lang->my2fa_setup_deactivate_confirmation = $lang->sprintf(
                     $lang->my2fa_setup_deactivate_confirmation,
@@ -178,6 +180,8 @@ function getSetupForm(array $user, string $setupUrl, bool $includeBreadcrumb = t
                 if ($method['className']::canBeDeactivated()) {
                     $setupDeactivateButton = eval(template('setup_button_deactivate'));
                 }
+
+                $setupManageButton = '';
 
                 if ($method['className']::canBeManaged()) {
                     $setupManageButton = eval(template('setup_button_manage'));
@@ -190,9 +194,9 @@ function getSetupForm(array $user, string $setupUrl, bool $includeBreadcrumb = t
         $trustedDevices = null;
         if (
             isDeviceTrustingAllowed() &&
-            doesUserHave2faEnabled($user['uid']) &&
+            doesUserHave2faEnabled($userID) &&
             (
-            $userTokens = selectUserTokens($user['uid'], [], [
+            $userTokens = selectUserTokens($userID, [], [
                 'order_by' => 'generated_on',
                 'order_dir' => 'DESC'
             ])
@@ -209,10 +213,10 @@ function getSetupForm(array $user, string $setupUrl, bool $includeBreadcrumb = t
                 verify_post_check($mybb->get_input('my_post_key'));
 
                 if ($mybb->get_input('current') === '1' && $currentUserToken) {
-                    deleteUserTokens($user['uid'], (array)$currentUserToken['tid']);
+                    deleteUserTokens($userID, (array)$currentUserToken['tid']);
                     redirect($setupUrl, $lang->my2fa_current_trusted_device_removed_success);
                 } elseif ($mybb->get_input('others') === '1' && $otherUserTokens) {
-                    deleteUserTokens($user['uid'], array_column($otherUserTokens, 'tid'));
+                    deleteUserTokens($userID, array_column($otherUserTokens, 'tid'));
                     redirect($setupUrl, $lang->my2fa_other_trusted_devices_removed_success);
                 }
             }

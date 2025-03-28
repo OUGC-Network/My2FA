@@ -343,13 +343,15 @@ function my2fa_global_start()
 {
     global $mybb, $session, $my2faUser;
 
-    if (!$mybb->user['uid']) {
+    $currentUserID = (int)$mybb->user['uid'];
+
+    if (!$currentUserID) {
         return;
     }
 
     $my2faUser = $mybb->user;
 
-    if (My2FA\isUserVerificationRequired($mybb->user['uid'])) {
+    if (My2FA\isUserVerificationRequired($currentUserID)) {
         #todo: maybe include possible ajax request
         if (!My2FA\hasUserBeenRedirected()) {
             My2FA\updateSessionStorage((string)$session->sid, ['redirected' => 1]);
@@ -362,13 +364,13 @@ function my2fa_global_start()
         $mybb->user['ismoderator'] = false;
         $mybb->post_code = generate_post_check();
     } elseif (
-        My2FA\doesUserHave2faEnabled($mybb->user['uid']) &&
+        My2FA\doesUserHave2faEnabled($currentUserID) &&
         !My2FA\isSessionTrusted()
     ) {
         My2FA\setSessionTrusted();
     }
 
-    if (My2FA\isUserForcedToHave2faActivated($mybb->user['uid'])) {
+    if (My2FA\isUserForcedToHave2faActivated($currentUserID)) {
         My2FA\redirectToSetup();
     }
 }
@@ -377,13 +379,15 @@ function my2fa_xmlhttp()
 {
     global $mybb, $lang;
 
-    if (!$mybb->user['uid']) {
+    $currentUserID = (int)$mybb->user['uid'];
+
+    if (!$currentUserID) {
         return;
     }
 
     if (
-        My2FA\isUserVerificationRequired($mybb->user['uid']) ||
-        My2FA\isUserForcedToHave2faActivated($mybb->user['uid'])
+        My2FA\isUserVerificationRequired($currentUserID) ||
+        My2FA\isUserForcedToHave2faActivated($currentUserID)
     ) {
         My2FA\loadLanguage();
         xmlhttp_error($lang->my2fa_xmlhttp_error);
@@ -394,13 +398,15 @@ function my2fa_archive_start()
 {
     global $mybb, $lang;
 
-    if (!$mybb->user['uid']) {
+    $currentUserID = (int)$mybb->user['uid'];
+
+    if (!$currentUserID) {
         return;
     }
 
     if (
-        My2FA\isUserVerificationRequired($mybb->user['uid']) ||
-        My2FA\isUserForcedToHave2faActivated($mybb->user['uid'])
+        My2FA\isUserVerificationRequired($currentUserID) ||
+        My2FA\isUserForcedToHave2faActivated($currentUserID)
     ) {
         My2FA\loadLanguage();
         archive_error($lang->my2fa_archive_error);
@@ -412,7 +418,7 @@ function my2fa_datahandler_login_complete_end(LoginDataHandler &$userHandler): L
 {
     global $session;
 
-    if (My2FA\isUserVerificationRequired($userHandler->login_data['uid'])) {
+    if (My2FA\isUserVerificationRequired((int)$userHandler->login_data['uid'])) {
         My2FA\updateSessionStorage((string)$session->sid, ['redirected' => 0]);
     }
 
@@ -424,10 +430,12 @@ function my2fa_misc_start()
     global $mybb, $lang, $my2faUser,
            $headerinclude, $header, $footer, $theme;
 
+    $userID = (int)$my2faUser['uid'];
+
     if (
-        $my2faUser['uid'] &&
+        $userID &&
         $mybb->get_input('action') === 'my2fa' &&
-        My2FA\isUserVerificationRequired($my2faUser['uid'])
+        My2FA\isUserVerificationRequired($userID)
     ) {
         My2FA\loadLanguage();
 
@@ -461,8 +469,10 @@ function my2fa_usercp_start()
         My2FA\loadLanguage();
         My2FA\passwordConfirmationCheck('usercp.php?action=my2fa', 20);
 
+        $currentUserID = (int)$mybb->user['uid'];
+
         $forcedGroupNotice = null;
-        if (My2FA\isUserForcedToHave2faActivated($mybb->user['uid'])) {
+        if (My2FA\isUserForcedToHave2faActivated($currentUserID)) {
             $forcedGroupNotice = eval(template('setup_notice_forced_group'));
         }
 
@@ -499,7 +509,9 @@ function my2fa_admin_load()
 {
     global $mybb, $lang, $page;
 
-    if (My2FA\isAdminVerificationRequired($mybb->user['uid'])) {
+    $currentUserID = (int)$mybb->user['uid'];
+
+    if (My2FA\isAdminVerificationRequired($currentUserID)) {
         My2FA\loadUserLanguage();
 
         //$mybb->input['redirect_url'] ??= My2FA\getCurrentUrl(); // PHP 7.4
@@ -509,13 +521,13 @@ function my2fa_admin_load()
 
         exit(My2FA\getAdminVerificationPage($verificationContent));
     } elseif (
-        My2FA\doesUserHave2faEnabled($mybb->user['uid']) &&
+        My2FA\doesUserHave2faEnabled($currentUserID) &&
         !My2FA\isAdminSessionTrusted()
     ) {
         My2FA\setAdminSessionTrusted();
     }
 
-    if (My2FA\isUserForcedToHave2faActivated($mybb->user['uid'])) {
+    if (My2FA\isUserForcedToHave2faActivated($currentUserID)) {
         My2FA\loadUserLanguage();
 
         $page->output_header($lang->access_denied);

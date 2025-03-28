@@ -72,7 +72,7 @@ function hasUserBeenRedirected(): bool
 {
     global $session;
 
-    return selectSessionStorage((string)$session->sid)['redirected'] ?? false;
+    return !empty(selectSessionStorage((string)$session->sid)['redirected']);
 }
 
 function doesUserHave2faEnabled(int $userId): bool
@@ -89,7 +89,7 @@ function isRedirectUrlValid(string $redirectUrl): bool
 
     return
         $redirectUrlHost === $boardUrlHost &&
-        strpos(parse_url($redirectUrl, PHP_URL_QUERY), 'ajax=') === false;
+        strpos((string)parse_url($redirectUrl, PHP_URL_QUERY), 'ajax=') === false;
 }
 
 function isUserForcedToHave2faActivated(int $userId): bool

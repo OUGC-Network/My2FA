@@ -78,7 +78,7 @@ function countUserMethods(int $userId): int
     $methodIdsStr = implode(',', array_column(selectMethods(), 'id'));
 
     if ($methodIdsStr) {
-        $count = $db->fetch_field(
+        $count = (int)$db->fetch_field(
             $db->simple_select(
                 'my2fa_user_methods',
                 'COUNT(*) AS count',
@@ -123,7 +123,7 @@ function selectUserLogs(int $userId, string $event, int $secondsInterval, array 
 
     $query = $db->simple_select(
         'my2fa_logs',
-        '*',
+        'data',
         "
             uid = {$userId} AND
             event = '" . $db->escape_string($event) . "' AND
@@ -145,7 +145,7 @@ function countUserLogs(int $userId, string $event, int $secondsInterval): int
 {
     global $db;
 
-    return $db->fetch_field(
+    return (int)$db->fetch_field(
         $db->simple_select(
             'my2fa_logs',
             'COUNT(*) AS count',
@@ -165,7 +165,7 @@ function selectSessionStorage(string $sessionId): array
     static $sessionsStorage;
 
     if (!isset($sessionsStorage[$sessionId])) {
-        $sessionStorage = $db->fetch_field(
+        $sessionStorage = (string)$db->fetch_field(
             $db->simple_select(
                 'sessions',
                 'my2fa_storage',
@@ -196,7 +196,7 @@ function selectUserHasMy2faField(int $userId): bool
         }
     }
 
-    return $usersHasMy2faField[$userId];
+    return (bool)$usersHasMy2faField[$userId];
 }
 
 function insertUserMethod(array $data): array
@@ -211,9 +211,7 @@ function insertUserMethod(array $data): array
 
     $data = getDataItemsEscaped($data);
 
-    $data += [
-        'activated_on' => TIME_NOW
-    ];
+    $data['activated_on'] = TIME_NOW;
 
     if (!selectUserHasMy2faField($data['uid'])) {
         updateUserHasMy2faField($data['uid'], true);
