@@ -156,9 +156,9 @@ abstract class AbstractMethod
         }
 
         $insertData = [
-            'uid' => $userId,
-            'method_id' => static::METHOD_ID,
-            'data' => $userMethodData
+            'userID' => $userId,
+            'methodID' => static::METHOD_ID,
+            'methodData' => $userMethodData
         ];
 
         $hookArguments = [
