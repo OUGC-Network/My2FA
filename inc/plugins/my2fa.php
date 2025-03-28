@@ -75,9 +75,9 @@ function my2fa_info()
         'website' => 'https://github.com/demtor/mybb-2fa',
         'author' => 'demtor',
         'authorsite' => 'https://github.com/demtor',
-        'version' => '1.8.0',
-        'versioncode' => '1800',
-        'codename' => 'ougc_my2fa',
+        'version' => '1.8.1',
+        'versioncode' => '1801',
+        'codename' => 'ougc_mytwofa',
         'compatibility' => '18*'
     ];
 }
