@@ -214,3 +214,14 @@ function redirectUrlAsQueryString(?string $redirectUrl): ?string
         ? '&redirect_url=' . urlencode($redirectUrl)
         : null;
 }
+
+function hooksRun(string $hookName, array $hookArguments = []): array
+{
+    global $plugins;
+
+    if ($plugins instanceof \pluginSystem) {
+        $hookArguments = $plugins->run_hooks('my2fa_' . $hookName, $hookArguments);
+    }
+
+    return (array)$hookArguments;
+}

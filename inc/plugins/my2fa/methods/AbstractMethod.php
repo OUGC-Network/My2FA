@@ -155,11 +155,20 @@ abstract class AbstractMethod
             setSessionTrusted();
         }
 
-        insertUserMethod([
+        $insertData = [
             'uid' => $userId,
             'method_id' => static::METHOD_ID,
             'data' => $userMethodData
-        ]);
+        ];
+
+        $hookArguments = [
+            'insertData' => &$insertData,
+        ];
+
+        $hookArguments = \My2FA\hooksRun('complete_activation', $hookArguments);
+
+        insertUserMethod($insertData);
+
         \My2FA\redirect($setupUrl, $lang->my2fa_activated_success);
     }
 
