@@ -213,8 +213,10 @@ function insertUserMethod(array $data): array
 
     $data['activated_on'] = TIME_NOW;
 
-    if (!selectUserHasMy2faField($data['uid'])) {
-        updateUserHasMy2faField($data['uid'], true);
+    $userID = (int)$data['uid'];
+
+    if (!selectUserHasMy2faField($userID)) {
+        updateUserHasMy2faField($userID, true);
     }
 
     $db->insert_query('my2fa_user_methods', $data);

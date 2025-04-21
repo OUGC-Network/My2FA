@@ -167,7 +167,11 @@ abstract class AbstractMethod
 
         $hookArguments = \My2FA\hooksRun('complete_activation', $hookArguments);
 
-        insertUserMethod($insertData);
+        insertUserMethod([
+            'uid' => $userId,
+            'method_id' => static::METHOD_ID,
+            'data' => $userMethodData
+        ]);
 
         \My2FA\redirect($setupUrl, $lang->my2fa_activated_success);
     }

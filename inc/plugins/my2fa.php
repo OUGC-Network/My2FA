@@ -646,7 +646,7 @@ function my2fa_member_profile_end(): void
     $memprofile['my2faVerificationStatus'] = '';
 
     if (!empty($memprofile['has_my2fa'])) {
-        global $lang;
+        global $mybb, $lang;
 
         My2FA\loadLanguage();
 
@@ -661,7 +661,7 @@ function my2fa_memberlist_user(array &$userData): array
     $userData['my2faVerificationStatus'] = '';
 
     if (!empty($userData['has_my2fa'])) {
-        global $lang;
+        global $mybb, $lang;
 
         My2FA\loadLanguage();
 
@@ -678,7 +678,7 @@ function my2fa_postbit(array &$postData): array
     $postData['my2faVerificationStatus'] = '';
 
     if (!empty($postData['has_my2fa'])) {
-        global $lang;
+        global $mybb, $lang;
 
         My2FA\loadLanguage();
 
