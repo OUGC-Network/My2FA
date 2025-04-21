@@ -88,3 +88,7 @@ To manage your two-factor authentication settings, you can go to the following U
 
 Thank you,
 {4} Staff';
+
+$l['my2fa_profile_verification_status'] = '2FA Enabled';
+$l['my2fa_member_list_verification_status'] = '2FA Enabled';
+$l['my2fa_postbit_verification_status'] = '2FA Enabled';

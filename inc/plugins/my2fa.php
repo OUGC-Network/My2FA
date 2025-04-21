@@ -54,6 +54,13 @@ if (!defined('IN_ADMINCP')) {
     $plugins->add_hook('usercp_start', 'my2fa_usercp_start');
 
     $plugins->add_hook('build_friendly_wol_location_end', 'my2fa_build_wol_location');
+
+    $plugins->add_hook('member_profile_end', 'my2fa_member_profile_end');
+    $plugins->add_hook('memberlist_user', 'my2fa_memberlist_user');
+    $plugins->add_hook('postbit', 'my2fa_postbit');
+    $plugins->add_hook('postbit_prev', 'my2fa_postbit_prev');
+    $plugins->add_hook('postbit_pm', 'my2fa_postbit_pm');
+    $plugins->add_hook('postbit_announcement', 'my2fa_postbit_announcement');
 } else {
     $plugins->add_hook('admin_load', 'my2fa_admin_load');
 
@@ -375,6 +382,23 @@ function my2fa_global_start()
     if (My2FA\isUserForcedToHave2faActivated($currentUserID)) {
         My2FA\redirectToSetup();
     }
+
+    global $templatelist;
+
+    if (isset($templatelist)) {
+        $templatelist .= ',';
+    } else {
+        $templatelist = '';
+    }
+
+    $templatelist .= 'my2fa_' . implode(
+            ', my2fa_',
+            [
+                'profile_verification_status',
+                'member_list_verification_status',
+                'postbit_verification_status'
+            ]
+        );
 }
 
 function my2fa_xmlhttp()
@@ -613,4 +637,70 @@ function my2fa_admin_do_recount_rebuild()
 
     flash_message('The user has_my2fa values have been rebuilt successfully.', 'success');
     admin_redirect('index.php?module=tools-recount_rebuild');
+}
+
+function my2fa_member_profile_end(): void
+{
+    global $memprofile;
+
+    $memprofile['my2faVerificationStatus'] = '';
+
+    if (!empty($memprofile['has_my2fa'])) {
+        global $lang;
+
+        My2FA\loadLanguage();
+
+        $my2faVerificationStatusText = $lang->my2fa_profile_verification_status;
+
+        $memprofile['my2faVerificationStatus'] = eval(My2FA\template('profile_verification_status'));
+    }
+}
+
+function my2fa_memberlist_user(array &$userData): array
+{
+    $userData['my2faVerificationStatus'] = '';
+
+    if (!empty($userData['has_my2fa'])) {
+        global $lang;
+
+        My2FA\loadLanguage();
+
+        $my2faVerificationStatusText = $lang->my2fa_member_list_verification_status;
+
+        $userData['my2faVerificationStatus'] = eval(My2FA\template('member_list_verification_status'));
+    }
+
+    return $userData;
+}
+
+function my2fa_postbit(array &$postData): array
+{
+    $postData['my2faVerificationStatus'] = '';
+
+    if (!empty($postData['has_my2fa'])) {
+        global $lang;
+
+        My2FA\loadLanguage();
+
+        $my2faVerificationStatusText = $lang->my2fa_postbit_verification_status;
+
+        $postData['my2faVerificationStatus'] = eval(My2FA\template('postbit_verification_status'));
+    }
+
+    return $postData;
+}
+
+function my2fa_postbit_prev(array &$postData): array
+{
+    return my2fa_postbit($postData);
+}
+
+function my2fa_postbit_pm(array &$postData): array
+{
+    return my2fa_postbit($postData);
+}
+
+function my2fa_postbit_announcement(array &$postData): array
+{
+    return my2fa_postbit($postData);
 }
