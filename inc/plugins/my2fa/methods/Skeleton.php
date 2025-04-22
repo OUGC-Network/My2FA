@@ -28,6 +28,8 @@ class Skeleton extends AbstractMethod
         $method = selectMethods()[self::METHOD_ID];
         $userMethod = selectUserMethods($userID, (array)self::METHOD_ID)[self::METHOD_ID];
 
+        $errors = '';
+        
         if (self::hasUserReachedMaximumAttempts($userID)) {
             $errors = inline_error((array)$lang->my2fa_verification_blocked_error);
         } elseif (isset($mybb->input['otp'])) {
